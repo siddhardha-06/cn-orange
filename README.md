@@ -1,186 +1,252 @@
-# Traffic Classification System
-### Mininet + POX SDN | Network Traffic Analyzer
+# 🔍 Traffic Classification System
+
+> **Real-time network packet classification using Mininet + POX SDN Controller**
+
+![Python](https://img.shields.io/badge/Python-3.6--3.9-blue?style=flat-square&logo=python)
+![Mininet](https://img.shields.io/badge/Mininet-2.3+-green?style=flat-square)
+![POX](https://img.shields.io/badge/POX-0.7.0-orange?style=flat-square)
+![OpenFlow](https://img.shields.io/badge/OpenFlow-1.0-red?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)
 
 ---
 
-## Project Overview
+## 📌 Overview
 
-This system classifies network traffic by protocol type (TCP, UDP, ICMP, OTHER) using:
-- **Mininet** — Software-defined network emulator
-- **POX** — Python-based OpenFlow SDN controller
-- **Dashboard** — Live HTML visualization of traffic stats
+This project implements a **Traffic Classification System** using Software-Defined Networking (SDN). It captures every packet flowing through a virtual Mininet network, classifies it by protocol type, and displays live statistics directly in the terminal.
+
+```
+  h1 (10.0.0.1) ──┐
+  h2 (10.0.0.2) ──┤── s1 (OVS Switch) ──── POX Controller
+  h3 (10.0.0.3) ──┤        OpenFlow 1.0     (traffic_classifier.py)
+  h4 (10.0.0.4) ──┘        127.0.0.1:6633
+```
+
+Every packet is intercepted, analyzed, and classified as **TCP / UDP / ICMP / OTHER** with real-time statistics shown in the terminal.
 
 ---
 
-## File Structure
+## ✨ Features
+
+- 🟦 **Protocol Classification** — Identifies TCP, UDP, ICMP, and OTHER packets
+- 📊 **Live Statistics** — Packet count, bytes transferred, and percentage distribution per protocol
+- 📈 **ASCII Bar Charts** — Visual distribution displayed directly in terminal
+- 🪵 **Packet Log** — Rolling log of last 10 classified packets with IP, port, and size details
+- ⚡ **Real-time Updates** — Terminal redraws on every packet arrival
+- 🌐 **SDN Architecture** — Uses OpenFlow 1.0, POX controller, Open vSwitch
+
+---
+
+## 🗂️ Project Structure
 
 ```
 traffic_classifier/
-├── pox_controller/
-│   └── traffic_classifier.py   ← POX controller (core logic)
-├── topology.py                  ← Mininet topology (4 hosts, 1 switch)
-├── dashboard.html               ← Live traffic dashboard
-├── setup_and_run.sh             ← Automated setup script
-└── README.md
+├── traffic_classifier.py   # POX controller — core classification engine
+├── topology.py             # Mininet topology (4 hosts, 1 switch)
+└── setup.sh                # Automated setup script
 ```
 
 ---
 
-## How It Works
+## ⚙️ Requirements
 
-```
-  h1 ──┐
-  h2 ──┤── s1 (OVS Switch) ──── POX Controller
-  h3 ──┤        OpenFlow         (traffic_classifier.py)
-  h4 ──┘
-```
+| Tool | Version | Install |
+|------|---------|---------|
+| Ubuntu / Debian | 20.04+ | — |
+| Python | 3.6 – 3.9 | pre-installed |
+| Mininet | 2.3+ | `sudo apt install mininet` |
+| Open vSwitch | 2.x+ | `sudo apt install openvswitch-switch` |
+| POX Controller | 0.7.0 | `git clone https://github.com/noxrepo/pox.git` |
+| iperf | any | `sudo apt install iperf` |
 
-1. Hosts send packets → OVS switch → POX receives `PacketIn` events
-2. Controller inspects each packet's L3/L4 headers
-3. Classifies as TCP / UDP / ICMP / OTHER
-4. Maintains cumulative statistics (count + bytes per protocol)
-5. Writes stats to `/tmp/traffic_stats.json` every packet
-6. Dashboard reads the JSON and updates in real time
+> ⚠️ POX works best with **Python 3.6–3.9**. On Python 3.10+ you may see version warnings, but it still functions.
 
----
-
-## Requirements
-
-| Tool | Install |
-|------|---------|
-| Mininet | `sudo apt install mininet` |
-| POX | `git clone https://github.com/noxrepo/pox.git` |
-| Open vSwitch | `sudo apt install openvswitch-switch` |
-| Python 3 | Pre-installed on Ubuntu |
+> ❌ **Wireshark is NOT required.** POX captures packets directly via OpenFlow `PacketIn` events.
 
 ---
 
-## Step-by-Step Setup
+## 🚀 Setup & Run
 
-### Step 1 — Install POX (if not already)
+### 1. Clone / Download the project
+
 ```bash
-cd ~
-git clone https://github.com/noxrepo/pox.git
+git clone https://github.com/yourusername/traffic-classifier.git
+cd traffic-classifier
 ```
 
-### Step 2 — Copy the Controller
+### 2. Install POX (if not already installed)
+
 ```bash
-cp pox_controller/traffic_classifier.py ~/pox/pox/misc/
+git clone https://github.com/noxrepo/pox.git ~/pox
 ```
 
-### Step 3 — Start POX Controller (Terminal 1)
+### 3. Copy the controller into POX
+
 ```bash
-cd ~/pox
-python3 pox.py misc.traffic_classifier
+cp traffic_classifier.py ~/pox/pox/misc/
 ```
 
-You should see:
-```
-INFO:traffic_classifier:Traffic Classifier module loaded
-INFO:openflow.of_01:Listening on 0.0.0.0:6633
+### 4. Clean up before every session
+
+```bash
+sudo pkill -f pox.py && sudo mn -c && sleep 3
 ```
 
-### Step 4 — Start Mininet Topology (Terminal 2)
+### 5. Terminal 1 — Start the POX Controller
+
+```bash
+cd ~/pox && python3 pox.py misc.traffic_classifier
+```
+
+Expected output:
+```
+✓ Switch connected: 00-00-00-00-00-01
+✓ All packets will now be sent to controller
+```
+
+### 6. Terminal 2 — Start the Mininet Topology
+
 ```bash
 sudo python3 topology.py
 ```
 
-You should see the Mininet CLI:
-```
-*** Network is ready ***
-mininet>
-```
-
-### Step 5 — Generate Traffic
-
-Inside the Mininet CLI:
+### 7. Generate Traffic inside Mininet CLI
 
 ```bash
-# Auto-generate mixed traffic (ICMP + TCP + UDP)
-mininet> run_demo
+# ICMP traffic
+h1 ping -c 5 h2
 
-# Or manually:
-mininet> h1 ping h2              # ICMP
-mininet> h1 iperf -s &           # TCP server
-mininet> h2 iperf -c 10.0.0.1   # TCP client
-mininet> h3 iperf -u -s &        # UDP server
-mininet> h4 iperf -u -c 10.0.0.3 # UDP client
+# TCP traffic
+h1 iperf -s &
+h2 iperf -c 10.0.0.1
 
-# Show statistics in CLI
-mininet> show_stats
-```
+# UDP traffic
+h3 iperf -u -s &
+h4 iperf -u -c 10.0.0.3
 
-### Step 6 — View Dashboard
+# Auto-generate mixed traffic
+run_demo
 
-Open `dashboard.html` in a browser, OR serve it locally:
-```bash
-cd traffic_classifier/
-python3 -m http.server 8080
-# Open http://localhost:8080/dashboard.html
+# Test all-pairs connectivity
+pingall
 ```
 
 ---
 
-## Statistics Output
+## 🖥️ Terminal Output
 
-The controller writes `/tmp/traffic_stats.json`:
+The POX terminal clears and redraws on every packet, showing:
 
-```json
-{
-  "stats": {
-    "TCP":   { "count": 142, "bytes": 189320 },
-    "UDP":   { "count": 87,  "bytes": 124500 },
-    "ICMP":  { "count": 30,  "bytes": 2520   },
-    "OTHER": { "count": 5,   "bytes": 380    }
-  },
-  "packet_log": [...],
-  "uptime": 45.2,
-  "total_packets": 264,
-  "timestamp": "14:32:01"
-}
+```
+══════════════════════════════════════════════════════════════
+   TRAFFIC CLASSIFICATION SYSTEM  │  POX + Mininet
+══════════════════════════════════════════════════════════════
+  Uptime: 42s   Total Packets: 87   Time: 22:14:35
+──────────────────────────────────────────────────────────────
+
+  PROTOCOL    PACKETS        BYTES      %   DISTRIBUTION
+  ──────────────────────────────────────────────────────────
+  TCP              45       61440   51.7%  ████████░░░░░░░░░░
+  UDP              28       39200   32.1%  █████░░░░░░░░░░░░░
+  ICMP             12         984   13.8%  ██░░░░░░░░░░░░░░░░
+  OTHER             2         220    2.4%  ░░░░░░░░░░░░░░░░░░
+
+  LAST 10 CLASSIFIED PACKETS
+  ──────────────────────────────────────────────────────────
+  TIME      PROTO   SRC IP          DST IP          SP     DP     SIZE
+  22:14:35  TCP     10.0.0.2        10.0.0.1        5201   5201   1460B
+  22:14:35  TCP     10.0.0.1        10.0.0.2        5201   58432  64B
+  22:14:34  UDP     10.0.0.4        10.0.0.3        5201   5201   1470B
+  22:14:33  ICMP    10.0.0.1        10.0.0.2        -      -      84B
+  ...
+
+  Latest:  [TCP]  10.0.0.2:5201  →  10.0.0.1:58432  (64B)
+══════════════════════════════════════════════════════════════
 ```
 
 ---
 
-## Dashboard Features
+## 🧠 How It Works
 
-| Feature | Description |
-|---------|-------------|
-| Protocol Cards | Live count + bytes per protocol |
-| Bar Charts | Packet and byte distribution |
-| Donut Chart | Protocol share (%) |
-| Sparkline | Packet rate over time |
-| Packet Log | Last 20 classified packets with IP/port details |
+### SDN Architecture
 
----
+In a traditional network, each switch decides how to forward packets independently. In SDN, a **central controller** (POX) makes all the decisions and pushes rules to switches via the **OpenFlow protocol**.
 
-## Topology Details
+### Packet Classification Flow
 
-| Host | IP Address |
-|------|------------|
-| h1 | 10.0.0.1/24 |
-| h2 | 10.0.0.2/24 |
-| h3 | 10.0.0.3/24 |
-| h4 | 10.0.0.4/24 |
-
-- Switch: `s1` (Open vSwitch, OpenFlow 1.0)
-- Controller: POX on `127.0.0.1:6633`
-- Link bandwidth: 10 Mbps, delay: 5ms
-
----
-
-## Troubleshooting
-
-**"Connection refused" in POX**
-→ Make sure Mininet is using `RemoteController` and POX is running first.
-
-**No stats file created**
-→ Check `/tmp/traffic_stats.json` exists; ensure POX has write permission to `/tmp`.
-
-**Dashboard not updating**
-→ The dashboard uses demo mode if the file isn't accessible over HTTP. Serve with `python3 -m http.server`.
-
-**Mininet cleanup**
-```bash
-sudo mn -c
 ```
+Packet arrives at switch
+        │
+        ▼
+  Table-miss rule fires
+  (no matching flow rule)
+        │
+        ▼
+  PacketIn event → POX controller
+        │
+        ▼
+  Inspect layers:
+  Ethernet → IPv4? ──No──→ OTHER
+        │
+       Yes
+        │
+        ▼
+  TCP layer? ──Yes──→ TCP (extract ports)
+        │
+       No
+        ▼
+  UDP layer? ──Yes──→ UDP (extract ports)
+        │
+       No
+        ▼
+  ICMP layer? ─Yes──→ ICMP
+        │
+       No
+        ▼
+      OTHER
+        │
+        ▼
+  Update stats + redraw terminal
+        │
+        ▼
+  PacketOut flood (traffic continues normally)
+```
+
+### Why Every Packet Reaches the Controller
+
+On switch connection, the controller installs a **table-miss rule** (lowest priority, match-all) that sends every packet to the controller. Unlike a learning switch that caches flow rules (causing packets to bypass the controller after the first one), this system intentionally avoids caching — ensuring **every single packet** is classified.
+
+---
+
+## 🐛 Troubleshooting
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `Address already in use (port 6633)` | Old POX instance still running | `sudo pkill -f pox.py && sleep 3` |
+| `RTNETLINK: File exists` | Mininet not cleaned up properly | `sudo mn -c` |
+| `Module not found: misc.traffic_classifier` | Controller not copied to POX | `cp traffic_classifier.py ~/pox/pox/misc/` |
+| Packets not updating in Terminal 1 | Old flood flow rule cached in switch | `sh ovs-ofctl del-flows s1` in Mininet CLI |
+| `No stats file found` | Expected — stats are terminal-only | Look at Terminal 1 (POX), not Mininet terminal |
+
+---
+
+## 📚 Key Concepts
+
+**SDN (Software-Defined Networking)** — Separates the control plane from the data plane. POX is the brain; OVS is the muscle.
+
+**OpenFlow** — The protocol POX uses to communicate with the OVS switch. `PacketIn` = packet sent to controller. `PacketOut` / `flow_mod` = controller instructs the switch.
+
+**Mininet** — Emulates a real network on one Linux machine using Linux network namespaces and Open vSwitch.
+
+**Table-miss rule** — A match-all, lowest-priority flow rule that sends unmatched packets to the controller, ensuring every packet is inspected.
+
+---
+
+## 📄 License
+
+MIT License — free to use, modify, and distribute.
+
+---
+
+<p align="center">
+  Built with 🐍 Python &nbsp;|&nbsp; Mininet &nbsp;|&nbsp; POX SDN &nbsp;|&nbsp; OpenFlow 1.0
+</p>
