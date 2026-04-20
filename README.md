@@ -241,11 +241,7 @@ On switch connection, the controller installs a **table-miss rule** (lowest prio
 
 ---
 
-## 📄 License
 
-MIT License — free to use, modify, and distribute.
-
----
 
 <p align="center">
   Built with 🐍 Python &nbsp;|&nbsp; Mininet &nbsp;|&nbsp; POX SDN &nbsp;|&nbsp; OpenFlow 1.0
